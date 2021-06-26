@@ -2,7 +2,8 @@ import os
 from shutil import copy, rmtree
 import random
 
-import wget
+# import wget
+import urllib.request
 import tarfile
 
 
@@ -77,7 +78,9 @@ def dog_data():
     cwd = os.getcwd()
     data_root = os.path.join(cwd, "dog_data")
 
-    wget.download("http://vision.stanford.edu/aditya86/ImageNetDogs/images.tar", data_root)
+    # wget.download("http://vision.stanford.edu/aditya86/ImageNetDogs/images.tar", data_root)
+    url = "http://vision.stanford.edu/aditya86/ImageNetDogs/images.tar"
+    urllib.request.urlretrieve(url, 'images.tar')
     tar = tarfile.open('images.tar')
     names = tar.getnames()
     for name in names:
