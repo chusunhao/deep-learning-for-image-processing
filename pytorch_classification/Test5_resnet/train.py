@@ -60,6 +60,11 @@ def main():
     # load pretrain weights
     # download url: https://download.pytorch.org/models/resnet34-333f7ec4.pth
     model_weight_path = "./resnet34-pre.pth"
+    if not os.exists(model_weight_path):
+        import urllib.request
+        url = "https://download.pytorch.org/models/resnet34-333f7ec4.pth"
+        urllib.request.urlretrieve(url, 'resnet34-pre.pth')
+    
     assert os.path.exists(model_weight_path), "file {} does not exist.".format(model_weight_path)
     net.load_state_dict(torch.load(model_weight_path, map_location=device))
     # for param in net.parameters():
