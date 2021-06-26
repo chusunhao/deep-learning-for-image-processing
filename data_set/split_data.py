@@ -74,7 +74,7 @@ def dog_data():
     random.seed(0)
 
     # 将数据集中10%的数据划分到验证集中
-    split_rate = 0.5
+    split_rate = 0.1
 
     # 指向你解压后的flower_photos文件夹
     cwd = os.getcwd()
