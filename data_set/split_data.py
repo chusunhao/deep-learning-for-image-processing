@@ -6,9 +6,6 @@ import wget
 import tarfile
 
 
-def un_tar(file_name):
-
-
 def mk_file(file_path: str):
     if os.path.exists(file_path):
         # 如果文件夹存在，则先删除原文件夹在重新创建
