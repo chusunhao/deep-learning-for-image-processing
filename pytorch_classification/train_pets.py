@@ -6,6 +6,7 @@ from Test2_alexnet.model import AlexNet
 from Test3_vggnet.model import vgg
 from Test4_googlenet.model import GoogLeNet
 from Test5_resnet.model import resnet34
+from Test6_mobilenet.model_v2 import MobileNetV2
 import torch.optim as optim
 import torchvision.transforms as transforms
 from tqdm import tqdm
@@ -36,7 +37,8 @@ model_urls = {
     'vgg16': 'https://download.pytorch.org/models/vgg16-397923af.pth',
     'vgg19': 'https://download.pytorch.org/models/vgg19-dcbb9e9d.pth',
     'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
-    'alexnet': "https://download.pytorch.org/models/alexnet-owt-7be5be79.pth"
+    'alexnet': "https://download.pytorch.org/models/alexnet-owt-7be5be79.pth",
+    'mobilenet_v2': "https://download.pytorch.org/models/mobilenet_v2-b0353104.pth",
 }
 
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
@@ -86,9 +88,10 @@ def main():
     # AlexNet(num_classes=37, init_weights=True),
     # vgg(model_name="vgg16", num_classes=37, init_weights=True, pretrained=True)
     # GoogLeNet(num_classes=37, aux_logits=True, init_weights=True)
-    nets = {"alexnet": AlexNet(),
-            "vgg16": vgg(model_name="vgg16", init_weights=True),
-            "resnet34": resnet34(),
+    # nets = {"alexnet": AlexNet(),
+    #         "vgg16": vgg(model_name="vgg16", init_weights=True),
+    #         "resnet34": resnet34(),
+    nets = {"mobilenet_v2": MobileNetV2()
             }
     for net_name, net in nets.items():
 
@@ -106,9 +109,9 @@ def main():
         if net_name == "resnet34":
             in_channel = net.fc.in_features
             net.fc = nn.Linear(in_channel, 37)
-        elif net_name == "vgg16" or net_name == "alexnet":
-            in_channel = net.classifier[6].in_features
-            net.classifier[6] = nn.Linear(in_channel, 37)
+        elif net_name == "vgg16" or net_name == "alexnet" or net_name == "mobilenet_v2":
+            in_channel = net.classifier[-1].in_features
+            net.classifier[-1] = nn.Linear(in_channel, 37)
 
         net.to(device)
 
