@@ -3,6 +3,8 @@ import torchvision
 import torch.nn as nn
 from Test1_official_demo.model import LeNet
 from Test2_alexnet.model import AlexNet
+from Test3_vggnet.model import vgg
+from Test4_googlenet.model import GoogLeNet
 import torch.optim as optim
 import torchvision.transforms as transforms
 from tqdm import tqdm
@@ -45,7 +47,9 @@ def main():
     val_data_iter = iter(validate_loader)
     val_image, val_label = val_data_iter.next()
 
-    nets = [AlexNet(num_classes=trainval_set.classes.__len__(), init_weights=True)]
+    nets = [AlexNet(num_classes=37, init_weights=True),
+            vgg(model_name="vgg16", num_classes=37, init_weights=True),
+            GoogLeNet(num_classes=37, aux_logits=True, init_weights=True)]
     for net in nets:
         # net = LeNet()
         device = torch.device("cuda:0")
@@ -54,7 +58,7 @@ def main():
         loss_function = nn.CrossEntropyLoss()
         optimizer = optim.Adam(net.parameters(), lr=0.001)
 
-        epochs = 10
+        epochs = 100
         best_acc = 0.0
         train_steps = len(train_loader)
         for epoch in range(epochs):
