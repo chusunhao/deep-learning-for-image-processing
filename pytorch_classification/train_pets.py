@@ -92,14 +92,12 @@ def main():
             print('[epoch %d] train_loss: %.3f  val_accuracy: %.3f' %
                   (epoch + 1, running_loss / train_steps, val_accurate))
 
+            save_path = f'./{net._get_name()}.pth'
             if val_accurate > best_acc:
                 best_acc = val_accurate
                 torch.save(net.state_dict(), save_path)
 
         print('Finished Training')
-
-        save_path = f'./{net._get_name()}.pth'
-        torch.save(net.state_dict(), save_path)
 
 
 if __name__ == '__main__':
