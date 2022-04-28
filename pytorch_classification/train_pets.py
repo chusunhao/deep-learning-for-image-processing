@@ -82,11 +82,11 @@ def main():
     # AlexNet(num_classes=37, init_weights=True),
     # vgg(model_name="vgg16", num_classes=37, init_weights=True, pretrained=True)
     # GoogLeNet(num_classes=37, aux_logits=True, init_weights=True)
-    nets = [resnet34()]
-    for net in nets:
-        net_name = "resnet34"
-        model_weight_path = "./{}-pre.pth".format(net_name)
+    nets = {"resnet34": resnet34(),
+            "vgg16": vgg(model_name="vgg16", init_weights=True)}
+    for net_name, net in nets:
 
+        model_weight_path = "./{}-pre.pth".format(net_name)
 
         if not os.path.exists(model_weight_path):
             print("file {} does not exist.".format(model_weight_path))
@@ -97,8 +97,13 @@ def main():
         #     param.requires_grad = False
 
         # change fc layer structure
-        in_channel = net.fc.in_features
-        net.fc = nn.Linear(in_channel, 37)
+        if net_name == "resnet34":
+            in_channel = net.fc.in_features
+            net.fc = nn.Linear(in_channel, 37)
+        elif net_name == "vgg16":
+            in_channel = net.classifier[6].in_features
+            net.classifier[6] = nn.Linear(in_channel, 37)
+
         net.to(device)
 
         print(f'Start Training {net._get_name()}')
