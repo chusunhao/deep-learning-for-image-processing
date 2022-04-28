@@ -9,7 +9,7 @@ from Test5_resnet.model import resnet34
 from Test6_mobilenet.model_v2 import MobileNetV2
 from Test6_mobilenet.model_v3 import mobilenet_v3_large
 from Test7_shufflenet.model import shufflenet_v2_x1_0
-from Test8_densenet.model import densenet121
+from Test8_densenet.model import densenet121, load_state_dict
 import torch.optim as optim
 import torchvision.transforms as transforms
 from tqdm import tqdm
@@ -96,18 +96,22 @@ def main():
     #         "resnet34": resnet34(),
     #         "mobilenet_v2": MobileNetV2(),
     #         "mobilenet_v3_large": mobilenet_v3_large(),
+    #         "shufflenet_v2_x1_0": shufflenet_v2_x1_0(),
     nets = {
-        "shufflenet_v2_x1_0": shufflenet_v2_x1_0(),
-        "densenet121": densenet121()
+        "densenet121": densenet121(num_classes=37)
             }
-    for net_name, net in nets.items():
 
+    for net_name, net in nets.items():
         model_weight_path = "./{}-pre.pth".format(net_name)
 
         if not os.path.exists(model_weight_path):
             print("file {} does not exist.".format(model_weight_path))
             os.system("wget -O {} {}".format(model_weight_path, model_urls[net_name]))
-        net.load_state_dict(torch.load(model_weight_path, map_location='cpu'))
+
+        if not net_name == "densenet121":
+            net.load_state_dict(torch.load(model_weight_path, map_location='cpu'))
+        else:
+            load_state_dict(net, model_weight_path)
 
         # for param in net.parameters():
         #     param.requires_grad = False
@@ -116,7 +120,7 @@ def main():
         if net_name in ["resnet34", "shufflenet_v2_x1_0"]:
             in_channel = net.fc.in_features
             net.fc = nn.Linear(in_channel, 37)
-        elif net_name in ["vgg16", "alexnet", "mobilenet_v2", "mobilenet_v3_large", "densenet121"]:
+        elif net_name in ["vgg16", "alexnet", "mobilenet_v2", "mobilenet_v3_large"]:
             in_channel = net.classifier[-1].in_features
             net.classifier[-1] = nn.Linear(in_channel, 37)
 
