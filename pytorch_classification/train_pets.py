@@ -103,7 +103,7 @@ def main():
 
         print(f'Start Training {net._get_name()}')
         loss_function = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(net.parameters(), lr=0.001)
+        optimizer = optim.Adam(net.parameters(), lr=0.0001)
 
         epochs = 100
         best_acc = 0.0
