@@ -7,6 +7,7 @@ from Test3_vggnet.model import vgg
 from Test4_googlenet.model import GoogLeNet
 from Test5_resnet.model import resnet34
 from Test6_mobilenet.model_v2 import MobileNetV2
+from Test6_mobilenet.model_v3 import mobilenet_v3_large
 import torch.optim as optim
 import torchvision.transforms as transforms
 from tqdm import tqdm
@@ -39,6 +40,7 @@ model_urls = {
     'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
     'alexnet': "https://download.pytorch.org/models/alexnet-owt-7be5be79.pth",
     'mobilenet_v2': "https://download.pytorch.org/models/mobilenet_v2-b0353104.pth",
+    'mobilenet_v3_large': "https://download.pytorch.org/models/mobilenet_v3_large-8738ca79.pth"
 }
 
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
@@ -91,7 +93,9 @@ def main():
     # nets = {"alexnet": AlexNet(),
     #         "vgg16": vgg(model_name="vgg16", init_weights=True),
     #         "resnet34": resnet34(),
-    nets = {"mobilenet_v2": MobileNetV2()
+    #         "mobilenet_v2": MobileNetV2()
+    nets = {
+            "mobilenet_v3_large": mobilenet_v3_large()
             }
     for net_name, net in nets.items():
 
