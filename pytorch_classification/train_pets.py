@@ -68,7 +68,7 @@ def main():
     val_image, val_label = val_data_iter.next()
 
     # AlexNet(num_classes=37, init_weights=True),
-    nets = [vgg(model_name="vgg16", num_classes=37, init_weights=True),
+    nets = [vgg(model_name="vgg16", num_classes=37, init_weights=True, pretrained=True),
             GoogLeNet(num_classes=37, aux_logits=True, init_weights=True)]
     for net in nets:
         # net = LeNet()

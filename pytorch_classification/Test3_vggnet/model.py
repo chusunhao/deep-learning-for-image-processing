@@ -1,5 +1,7 @@
 import torch.nn as nn
 import torch
+import os
+import urllib
 
 # official pretrain weights
 model_urls = {
@@ -11,9 +13,10 @@ model_urls = {
 
 
 class VGG(nn.Module):
-    def __init__(self, features, num_classes=1000, init_weights=False):
+    def __init__(self, features, model_name, num_classes=1000, init_weights=False, pretrained=True):
         super(VGG, self).__init__()
         self.features = features
+        self.model_name = model_name
         self.classifier = nn.Sequential(
             nn.Linear(512*7*7, 4096),
             nn.ReLU(True),
@@ -21,10 +24,14 @@ class VGG(nn.Module):
             nn.Linear(4096, 4096),
             nn.ReLU(True),
             nn.Dropout(p=0.5),
-            nn.Linear(4096, num_classes)
+            nn.Linear(4096, 1000)
         )
         if init_weights:
             self._initialize_weights()
+        if pretrained:
+            self._pretrained()
+        in_channel = self.classifier[6].in_features
+        self.classifier[6] = nn.Linear(in_channel, num_classes)
 
     def forward(self, x):
         # N x 3 x 224 x 224
@@ -47,6 +54,12 @@ class VGG(nn.Module):
                 # nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
+    def _pretrained(self):
+        model_weight_path = "./{}-pre.pth".format(self.model_name)
+        if not os.path.exists(model_weight_path):
+            print("file {} does not exist.".format(model_weight_path))
+            os.system("wget -O {} {}".format(model_weight_path, model_urls[self.model_name]))
+        self.load_state_dict(torch.load(model_weight_path))
 
 def make_features(cfg: list):
     layers = []
@@ -73,5 +86,5 @@ def vgg(model_name="vgg16", **kwargs):
     assert model_name in cfgs, "Warning: model number {} not in cfgs dict!".format(model_name)
     cfg = cfgs[model_name]
 
-    model = VGG(make_features(cfg), **kwargs)
+    model = VGG(make_features(cfg), model_name, **kwargs)
     return model
