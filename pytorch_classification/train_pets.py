@@ -50,7 +50,7 @@ def main():
     nets = [AlexNet(num_classes=37, init_weights=True),
             vgg(model_name="vgg16", num_classes=37, init_weights=True),
             GoogLeNet(num_classes=37, aux_logits=True, init_weights=True)]
-    for net in nets:
+    for net in nets[1:]:
         # net = LeNet()
         device = torch.device("cuda:0")
         net.to(device)
