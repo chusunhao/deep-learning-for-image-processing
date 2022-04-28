@@ -5,6 +5,7 @@ from Test1_official_demo.model import LeNet
 from Test2_alexnet.model import AlexNet
 from Test3_vggnet.model import vgg
 from Test4_googlenet.model import GoogLeNet
+from Test5_resnet.model import resnet34
 import torch.optim as optim
 import torchvision.transforms as transforms
 from tqdm import tqdm
@@ -26,16 +27,27 @@ class SplitDataset:
     def __len__(self):
         return len(self.dataset)
 
+# official pretrain weights
+model_urls = {
+    'vgg11': 'https://download.pytorch.org/models/vgg11-bbd30ac9.pth',
+    'vgg13': 'https://download.pytorch.org/models/vgg13-c768596a.pth',
+    'vgg16': 'https://download.pytorch.org/models/vgg16-397923af.pth',
+    'vgg19': 'https://download.pytorch.org/models/vgg19-dcbb9e9d.pth',
+    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth'
+}
+
+device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+
 
 def main():
     data_transform = {
         "train": transforms.Compose([transforms.RandomResizedCrop(224),
                                      transforms.RandomHorizontalFlip(),
                                      transforms.ToTensor(),
-                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]),
+                                     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]),
         "val": transforms.Compose([transforms.Resize((224, 224)),
                                    transforms.ToTensor(),
-                                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])}
+                                   transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])}
 
     # 第一次使用时要将download设置为True才会自动去下载数据集
     trainval_set = torchvision.datasets.OxfordIIITPet(root='./data', split="trainval",
@@ -68,12 +80,27 @@ def main():
     val_image, val_label = val_data_iter.next()
 
     # AlexNet(num_classes=37, init_weights=True),
-    nets = [vgg(model_name="vgg16", num_classes=37, init_weights=True, pretrained=True),
-            GoogLeNet(num_classes=37, aux_logits=True, init_weights=True)]
+    # vgg(model_name="vgg16", num_classes=37, init_weights=True, pretrained=True)
+    # GoogLeNet(num_classes=37, aux_logits=True, init_weights=True)
+    nets = [resnet34()]
     for net in nets:
-        # net = LeNet()
-        device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+        net_name = net._get_name()
+        model_weight_path = "./{}-pre.pth".format(net_name)
+
+
+        if not os.path.exists(model_weight_path):
+            print("file {} does not exist.".format(model_weight_path))
+            os.system("wget -O {} {}".format(model_weight_path, model_urls[net_name]))
+        net.load_state_dict(torch.load(model_weight_path, map_location='cpu'))
+
+        # for param in net.parameters():
+        #     param.requires_grad = False
+
+        # change fc layer structure
+        in_channel = net.fc.in_features
+        net.fc = nn.Linear(in_channel, 37)
         net.to(device)
+
         print(f'Start Training {net._get_name()}')
         loss_function = nn.CrossEntropyLoss()
         optimizer = optim.Adam(net.parameters(), lr=0.001)
@@ -116,7 +143,7 @@ def main():
             print('[epoch %d] train_loss: %.3f  val_accuracy: %.3f' %
                   (epoch + 1, running_loss / train_steps, val_accurate))
 
-            save_path = f'./{net._get_name()}.pth'
+            save_path = './{}.pth'.format(net_name)
             if val_accurate > best_acc:
                 best_acc = val_accurate
                 torch.save(net.state_dict(), save_path)
