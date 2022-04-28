@@ -53,8 +53,8 @@ def main():
                 # zero the parameter gradients
                 optimizer.zero_grad()
                 # forward + backward + optimize
-                outputs = net(inputs)
-                loss = loss_function(outputs, labels)
+                outputs = net(inputs.cuda())
+                loss = loss_function(outputs, labels.cuda())
                 loss.backward()
                 optimizer.step()
 
@@ -64,7 +64,7 @@ def main():
                     with torch.no_grad():
                         outputs = net(val_image)  # [batch, 10]
                         predict_y = torch.max(outputs, dim=1)[1]
-                        accuracy = torch.eq(predict_y, val_label).sum().item() / val_label.size(0)
+                        accuracy = torch.eq(predict_y, val_label.cuda()).sum().item() / val_label.size(0)
 
                         print('[%d, %5d] train_loss: %.3f  test_accuracy: %.3f' %
                               (epoch + 1, step + 1, running_loss / 500, accuracy))
