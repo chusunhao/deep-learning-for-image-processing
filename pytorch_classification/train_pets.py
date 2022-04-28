@@ -84,7 +84,7 @@ def main():
     # GoogLeNet(num_classes=37, aux_logits=True, init_weights=True)
     nets = [resnet34()]
     for net in nets:
-        net_name = net._get_name()
+        net_name = "resnet34"
         model_weight_path = "./{}-pre.pth".format(net_name)
 
 
