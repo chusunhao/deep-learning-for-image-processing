@@ -5,6 +5,9 @@ from Test1_official_demo.model import LeNet
 from Test2_alexnet.model import AlexNet
 import torch.optim as optim
 import torchvision.transforms as transforms
+from tqdm import tqdm
+import sys
+import os
 
 
 def main():
@@ -13,62 +16,85 @@ def main():
          transforms.Resize(size=(224, 224)),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    # 70% 训练图片
     # 第一次使用时要将download设置为True才会自动去下载数据集
     trainval_set = torchvision.datasets.OxfordIIITPet(root='./data', split="trainval",
                                                       download=True, transform=transform)
-
+    # 70% 训练图片
     train_size = int(0.7 * len(trainval_set))
     test_size = len(trainval_set) - train_size
-    train_set, val_set = torch.utils.data.random_split(trainval_set, [train_size, test_size])
+    train_dataset, validate_dataset = torch.utils.data.random_split(trainval_set, [train_size, test_size])
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=16,
-                                               shuffle=True, num_workers=0)
+    batch_size = 32
+    nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
+    print('Using {} dataloader workers every process'.format(nw))
+
+    train_num = len(train_dataset)
+    train_loader = torch.utils.data.DataLoader(train_dataset,
+                                               batch_size=batch_size, shuffle=True,
+                                               num_workers=nw)
 
     # 30% 验证图片
     # 第一次使用时要将download设置为True才会自动去下载数据集
-    val_loader = torch.utils.data.DataLoader(val_set, batch_size=500,
-                                             shuffle=False, num_workers=0)
-    val_data_iter = iter(val_loader)
-    val_image, val_label = val_data_iter.next()
+    val_num = len(validate_dataset)
+    validate_loader = torch.utils.data.DataLoader(validate_dataset,
+                                                  batch_size=4, shuffle=False,
+                                                  num_workers=nw)
 
-    # classes = ('plane', 'car', 'bird', 'cat',
-    #            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    print("using {} images for training, {} images for validation.".format(train_num,
+                                                                           val_num))
+    val_data_iter = iter(validate_loader)
+    val_image, val_label = val_data_iter.next()
 
     nets = [AlexNet(num_classes=trainval_set.classes.__len__(), init_weights=True)]
     for net in nets:
         # net = LeNet()
-        net.to(torch.device("cuda:0"))
+        device = torch.device("cuda:0")
+        net.to(device)
         print(f'Start Training {net._get_name()}')
         loss_function = nn.CrossEntropyLoss()
         optimizer = optim.Adam(net.parameters(), lr=0.001)
 
-        for epoch in range(5):  # loop over the dataset multiple times
-
+        epochs = 10
+        best_acc = 0.0
+        train_steps = len(train_loader)
+        for epoch in range(epochs):
+            # train
+            net.train()
             running_loss = 0.0
-            for step, data in enumerate(train_loader, start=0):
-                # get the inputs; data is a list of [inputs, labels]
-                inputs, labels = data
-
-                # zero the parameter gradients
+            train_bar = tqdm(train_loader, file=sys.stdout)
+            for step, data in enumerate(train_bar):
+                images, labels = data
                 optimizer.zero_grad()
-                # forward + backward + optimize
-                outputs = net(inputs.cuda())
-                loss = loss_function(outputs, labels.cuda())
+                outputs = net(images.to(device))
+                loss = loss_function(outputs, labels.to(device))
                 loss.backward()
                 optimizer.step()
 
                 # print statistics
                 running_loss += loss.item()
-                if step % 500 == 499:  # print every 500 mini-batches
-                    with torch.no_grad():
-                        outputs = net(val_image.cuda())  # [batch, 10]
-                        predict_y = torch.max(outputs, dim=1)[1]
-                        accuracy = torch.eq(predict_y, val_label.cuda()).sum().item() / val_label.size(0)
 
-                        print('[%d, %5d] train_loss: %.3f  test_accuracy: %.3f' %
-                              (epoch + 1, step + 1, running_loss / 500, accuracy))
-                        running_loss = 0.0
+                train_bar.desc = "train epoch[{}/{}] loss:{:.3f}".format(epoch + 1,
+                                                                         epochs,
+                                                                         loss)
+
+            # validate
+            net.eval()
+            acc = 0.0  # accumulate accurate number / epoch
+            with torch.no_grad():
+                val_bar = tqdm(validate_loader, file=sys.stdout)
+                for val_data in val_bar:
+                    val_images, val_labels = val_data
+                    outputs = net(val_images.to(device))
+                    predict_y = torch.max(outputs, dim=1)[1]
+                    acc += torch.eq(predict_y, val_labels.to(device)).sum().item()
+
+            val_accurate = acc / val_num
+            print('[epoch %d] train_loss: %.3f  val_accuracy: %.3f' %
+                  (epoch + 1, running_loss / train_steps, val_accurate))
+
+            if val_accurate > best_acc:
+                best_acc = val_accurate
+                torch.save(net.state_dict(), save_path)
 
         print('Finished Training')
 
