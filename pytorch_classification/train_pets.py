@@ -42,7 +42,7 @@ model_urls = {
     'alexnet': "https://download.pytorch.org/models/alexnet-owt-7be5be79.pth",
     'mobilenet_v2': "https://download.pytorch.org/models/mobilenet_v2-b0353104.pth",
     'mobilenet_v3_large': "https://download.pytorch.org/models/mobilenet_v3_large-8738ca79.pth",
-    'shufflenet_v2_x1_0': "https://download.pytorch.org/models/shufflenetv2_x0.5-f707e7126e.pth"
+    'shufflenet_v2_x1_0': "https://download.pytorch.org/models/shufflenetv2_x1-5666bf0f80.pth"
 }
 
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
@@ -96,8 +96,9 @@ def main():
     #         "vgg16": vgg(model_name="vgg16", init_weights=True),
     #         "resnet34": resnet34(),
     #         "mobilenet_v2": MobileNetV2(),
-    #         "mobilenet_v3_large": mobilenet_v3_large()
+    #
     nets = {
+        "mobilenet_v3_large": mobilenet_v3_large(),
         "shufflenet_v2_x1_0": shufflenet_v2_x1_0()
             }
     for net_name, net in nets.items():
@@ -126,7 +127,7 @@ def main():
         loss_function = nn.CrossEntropyLoss()
         optimizer = optim.Adam(net.parameters(), lr=0.0001)
 
-        epochs = 100
+        epochs = 10
         best_acc = 0.0
         train_steps = len(train_loader)
         for epoch in range(epochs):
