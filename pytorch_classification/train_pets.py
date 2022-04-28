@@ -60,7 +60,7 @@ def main():
 
                 # print statistics
                 running_loss += loss.item()
-                if step % 500 == 499:  # print every 500 mini-batches
+                if step % 10 == 9:  # print every 500 mini-batches
                     with torch.no_grad():
                         outputs = net(val_image)  # [batch, 10]
                         predict_y = torch.max(outputs, dim=1)[1]
