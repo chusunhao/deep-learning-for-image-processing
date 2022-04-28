@@ -87,8 +87,9 @@ def main():
     # vgg(model_name="vgg16", num_classes=37, init_weights=True, pretrained=True)
     # GoogLeNet(num_classes=37, aux_logits=True, init_weights=True)
     nets = {"alexnet": AlexNet(),
+            "vgg16": vgg(model_name="vgg16", init_weights=True),
             "resnet34": resnet34(),
-            "vgg16": vgg(model_name="vgg16", init_weights=True)}
+            }
     for net_name, net in nets.items():
 
         model_weight_path = "./{}-pre.pth".format(net_name)
