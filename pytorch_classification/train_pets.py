@@ -62,7 +62,7 @@ def main():
                 running_loss += loss.item()
                 if step % 10 == 9:  # print every 500 mini-batches
                     with torch.no_grad():
-                        outputs = net(val_image)  # [batch, 10]
+                        outputs = net(val_image.cuda())  # [batch, 10]
                         predict_y = torch.max(outputs, dim=1)[1]
                         accuracy = torch.eq(predict_y, val_label.cuda()).sum().item() / val_label.size(0)
 
