@@ -22,12 +22,12 @@ def main():
     test_size = len(trainval_set) - train_size
     train_set, val_set = torch.utils.data.random_split(trainval_set, [train_size, test_size])
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=8,
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=16,
                                                shuffle=True, num_workers=0)
 
     # 30% 验证图片
     # 第一次使用时要将download设置为True才会自动去下载数据集
-    val_loader = torch.utils.data.DataLoader(val_set, batch_size=16,
+    val_loader = torch.utils.data.DataLoader(val_set, batch_size=500,
                                              shuffle=False, num_workers=0)
     val_data_iter = iter(val_loader)
     val_image, val_label = val_data_iter.next()
@@ -60,7 +60,7 @@ def main():
 
                 # print statistics
                 running_loss += loss.item()
-                if step % 10 == 9:  # print every 500 mini-batches
+                if step % 500 == 499:  # print every 500 mini-batches
                     with torch.no_grad():
                         outputs = net(val_image.cuda())  # [batch, 10]
                         predict_y = torch.max(outputs, dim=1)[1]
