@@ -12,6 +12,7 @@ from tqdm import tqdm
 import sys
 import os
 
+
 class SplitDataset:
     def __init__(self, dataset, transform, split: str = 'train'):
         self.dataset = dataset
@@ -27,13 +28,15 @@ class SplitDataset:
     def __len__(self):
         return len(self.dataset)
 
+
 # official pretrain weights
 model_urls = {
     'vgg11': 'https://download.pytorch.org/models/vgg11-bbd30ac9.pth',
     'vgg13': 'https://download.pytorch.org/models/vgg13-c768596a.pth',
     'vgg16': 'https://download.pytorch.org/models/vgg16-397923af.pth',
     'vgg19': 'https://download.pytorch.org/models/vgg19-dcbb9e9d.pth',
-    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth'
+    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
+    'alexnet': "https://download.pytorch.org/models/alexnet-owt-7be5be79.pth"
 }
 
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
@@ -56,7 +59,8 @@ def main():
     train_size = int(0.7 * len(trainval_set))
     test_size = len(trainval_set) - train_size
     train_dataset, validate_dataset = torch.utils.data.random_split(trainval_set, [train_size, test_size])
-    train_dataset, validate_dataset = SplitDataset(train_dataset, data_transform, 'train'), SplitDataset(validate_dataset, data_transform, 'val')
+    train_dataset, validate_dataset = SplitDataset(train_dataset, data_transform, 'train'), SplitDataset(
+        validate_dataset, data_transform, 'val')
 
     batch_size = 32
     nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
@@ -82,7 +86,8 @@ def main():
     # AlexNet(num_classes=37, init_weights=True),
     # vgg(model_name="vgg16", num_classes=37, init_weights=True, pretrained=True)
     # GoogLeNet(num_classes=37, aux_logits=True, init_weights=True)
-    nets = {"resnet34": resnet34(),
+    nets = {"alexnet": AlexNet(),
+            "resnet34": resnet34(),
             "vgg16": vgg(model_name="vgg16", init_weights=True)}
     for net_name, net in nets.items():
 
@@ -100,7 +105,7 @@ def main():
         if net_name == "resnet34":
             in_channel = net.fc.in_features
             net.fc = nn.Linear(in_channel, 37)
-        elif net_name == "vgg16":
+        elif net_name == "vgg16" or net_name == "alexnet":
             in_channel = net.classifier[6].in_features
             net.classifier[6] = nn.Linear(in_channel, 37)
 
