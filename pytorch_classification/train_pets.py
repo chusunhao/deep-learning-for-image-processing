@@ -13,10 +13,10 @@ import os
 
 
 def main():
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.Resize(size=(224, 224)),
-         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    transform = transforms.Compose([
+        transforms.Resize(size=(224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     # 第一次使用时要将download设置为True才会自动去下载数据集
     trainval_set = torchvision.datasets.OxfordIIITPet(root='./data', split="trainval",
