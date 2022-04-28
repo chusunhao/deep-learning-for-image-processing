@@ -8,6 +8,7 @@ from Test4_googlenet.model import GoogLeNet
 from Test5_resnet.model import resnet34
 from Test6_mobilenet.model_v2 import MobileNetV2
 from Test6_mobilenet.model_v3 import mobilenet_v3_large
+from Test7_shufflenet.model import shufflenet_v2_x1_0
 import torch.optim as optim
 import torchvision.transforms as transforms
 from tqdm import tqdm
@@ -40,7 +41,8 @@ model_urls = {
     'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
     'alexnet': "https://download.pytorch.org/models/alexnet-owt-7be5be79.pth",
     'mobilenet_v2': "https://download.pytorch.org/models/mobilenet_v2-b0353104.pth",
-    'mobilenet_v3_large': "https://download.pytorch.org/models/mobilenet_v3_large-8738ca79.pth"
+    'mobilenet_v3_large': "https://download.pytorch.org/models/mobilenet_v3_large-8738ca79.pth",
+    'shufflenet_v2_x1_0': "https://download.pytorch.org/models/shufflenetv2_x0.5-f707e7126e.pth"
 }
 
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
@@ -93,9 +95,10 @@ def main():
     # nets = {"alexnet": AlexNet(),
     #         "vgg16": vgg(model_name="vgg16", init_weights=True),
     #         "resnet34": resnet34(),
-    #         "mobilenet_v2": MobileNetV2()
+    #         "mobilenet_v2": MobileNetV2(),
+    #         "mobilenet_v3_large": mobilenet_v3_large()
     nets = {
-            "mobilenet_v3_large": mobilenet_v3_large()
+        "shufflenet_v2_x1_0": shufflenet_v2_x1_0()
             }
     for net_name, net in nets.items():
 
@@ -110,10 +113,10 @@ def main():
         #     param.requires_grad = False
 
         # change fc layer structure
-        if net_name == "resnet34":
+        if net_name in ["resnet34", "shufflenet_v2_x1_0"]:
             in_channel = net.fc.in_features
             net.fc = nn.Linear(in_channel, 37)
-        elif net_name == "vgg16" or net_name == "alexnet" or net_name == "mobilenet_v2":
+        elif net_name in ["vgg16", "alexnet", "mobilenet_v2","mobilenet_v3_large"]:
             in_channel = net.classifier[-1].in_features
             net.classifier[-1] = nn.Linear(in_channel, 37)
 
