@@ -2,7 +2,7 @@
 
 ## 环境配置：
 * Python 3.6/3.7/3.8
-* Pytorch 1.6
+* Pytorch 1.7.1
 * pycocotools(Linux:```pip install pycocotools```; Windows:```pip install pycocotools-windows```(不需要额外安装vs))
 * Ubuntu或Centos(不建议Windows)
 * 最好使用GPU训练
@@ -46,4 +46,4 @@
 * https://www.bilibili.com/video/BV1vK411H771/
 
 ## Resnet50 + SSD算法框架图
-![Resnet50 SSD](https://github.com/WZMIAOMIAO/deep-learning-for-image-processing/raw/master/pytorch_object_detection/ssd/res50_ssd.png) 
+![Resnet50 SSD](res50_ssd.png) 

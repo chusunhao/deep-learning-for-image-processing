@@ -2,7 +2,7 @@
 ## 该项目源自[ultralytics/yolov3](https://github.com/ultralytics/yolov3)
 ## 1 环境配置：
 * Python3.6或者3.7
-* Pytorch1.6(注意：必须是1.6.0或以上，因为使用官方提供的混合精度训练1.6.0后才支持)
+* Pytorch1.7.1(注意：必须是1.6.0或以上，因为使用官方提供的混合精度训练1.6.0后才支持)
 * pycocotools(Linux: ```pip install pycocotools```;   
   Windows: ```pip install pycocotools-windows```(不需要额外安装vs))
 * 更多环境配置信息，请查看```requirements.txt```文件
@@ -40,8 +40,7 @@
 
 ## 3 训练数据的准备以及目录结构
 * 这里建议标注数据时直接生成yolo格式的标签文件```.txt```，推荐使用免费开源的标注软件(支持yolo格式)，[https://github.com/tzutalin/labelImg](https://github.com/tzutalin/labelImg)
-* 如果之前已经标注成pascal voc的```.xml```格式了也没关系，我写了个voc转yolo格式的转化脚本，下面会讲怎么使用
-* 将自己数据集中的图像大小缩放到与coco数据集一致(图像预处理算法决定的)
+* 如果之前已经标注成pascal voc的```.xml```格式了也没关系，我写了个voc转yolo格式的转化脚本，4.1会讲怎么使用
 * 测试图像时最好将图像缩放到32的倍数
 * 标注好的数据集请按照以下目录结构进行摆放:
 ```
@@ -130,4 +129,4 @@ cfg_path = "./cfg/yolov3-spp.cfg"
 [https://www.bilibili.com/video/BV1t54y1C7ra](https://www.bilibili.com/video/BV1t54y1C7ra)
 
 ## YOLOv3 SPP框架图
-![yolov3spp](https://github.com/WZMIAOMIAO/deep-learning-for-image-processing/raw/master/pytorch_object_detection/yolov3_spp/yolov3spp.png) 
+![yolov3spp](yolov3spp.png) 

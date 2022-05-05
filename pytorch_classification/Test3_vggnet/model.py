@@ -1,5 +1,7 @@
 import torch.nn as nn
 import torch
+import os
+import urllib
 
 # official pretrain weights
 model_urls = {
@@ -46,7 +48,6 @@ class VGG(nn.Module):
                 nn.init.xavier_uniform_(m.weight)
                 # nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
-
 
 def make_features(cfg: list):
     layers = []

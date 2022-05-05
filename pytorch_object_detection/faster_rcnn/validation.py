@@ -13,7 +13,7 @@ import numpy as np
 import transforms
 from network_files import FasterRCNN
 from backbone import resnet50_fpn_backbone
-from my_dataset import VOC2012DataSet
+from my_dataset import VOCDataSet
 from train_utils import get_coco_api_from_dataset, CocoEvaluator
 
 
@@ -100,8 +100,9 @@ def main(parser_data):
     # read class_indict
     label_json_path = './pascal_voc_classes.json'
     assert os.path.exists(label_json_path), "json file {} dose not exist.".format(label_json_path)
-    json_file = open(label_json_path, 'r')
-    class_dict = json.load(json_file)
+    with open(label_json_path, 'r') as f:
+        class_dict = json.load(f)
+
     category_index = {v: k for k, v in class_dict.items()}
 
     VOC_root = parser_data.data_path
@@ -115,9 +116,9 @@ def main(parser_data):
     print('Using %g dataloader workers' % nw)
 
     # load validation data set
-    val_dataset = VOC2012DataSet(VOC_root, data_transform["val"], "val.txt")
+    val_dataset = VOCDataSet(VOC_root, "2012", data_transform["val"], "val.txt")
     val_dataset_loader = torch.utils.data.DataLoader(val_dataset,
-                                                     batch_size=batch_size,
+                                                     batch_size=1,
                                                      shuffle=False,
                                                      num_workers=nw,
                                                      pin_memory=True,
@@ -129,10 +130,9 @@ def main(parser_data):
     model = FasterRCNN(backbone=backbone, num_classes=parser_data.num_classes + 1)
 
     # 载入你自己训练好的模型权重
-    weights_path = parser_data.weights
+    weights_path = parser_data.weights_path
     assert os.path.exists(weights_path), "not found {} file.".format(weights_path)
-    weights_dict = torch.load(weights_path, map_location=device)
-    model.load_state_dict(weights_dict['model'])
+    model.load_state_dict(torch.load(weights_path, map_location='cpu')['model'])
     # print(model)
 
     model.to(device)
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     parser.add_argument('--data-path', default='/data/', help='dataset root')
 
     # 训练好的权重文件
-    parser.add_argument('--weights', default='./save_weights/model.pth', type=str, help='training weights')
+    parser.add_argument('--weights-path', default='./save_weights/model.pth', type=str, help='training weights')
 
     # batch size
     parser.add_argument('--batch_size', default=1, type=int, metavar='N',

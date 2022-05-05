@@ -37,8 +37,8 @@ def main():
     json_path = './class_indices.json'
     assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
 
-    json_file = open(json_path, "r")
-    class_indict = json.load(json_file)
+    with open(json_path, "r") as f:
+        class_indict = json.load(f)
 
     # create model
     model = create_model(num_classes=5).to(device)
@@ -55,7 +55,9 @@ def main():
     print_res = "class: {}   prob: {:.3}".format(class_indict[str(predict_cla)],
                                                  predict[predict_cla].numpy())
     plt.title(print_res)
-    print(print_res)
+    for i in range(len(predict)):
+        print("class: {:10}   prob: {:.3}".format(class_indict[str(i)],
+                                                  predict[i].numpy()))
     plt.show()
 
 

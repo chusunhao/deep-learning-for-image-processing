@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 
 import torch
@@ -66,7 +67,7 @@ def main():
     # download url: https://download.pytorch.org/models/mobilenet_v2-b0353104.pth
     model_weight_path = "./mobilenet_v2.pth"
     assert os.path.exists(model_weight_path), "file {} dose not exist.".format(model_weight_path)
-    pre_weights = torch.load(model_weight_path, map_location=device)
+    pre_weights = torch.load(model_weight_path, map_location='cpu')
 
     # delete classifier weights
     pre_dict = {k: v for k, v in pre_weights.items() if net.state_dict()[k].numel() == v.numel()}
@@ -92,7 +93,7 @@ def main():
         # train
         net.train()
         running_loss = 0.0
-        train_bar = tqdm(train_loader)
+        train_bar = tqdm(train_loader, file=sys.stdout)
         for step, data in enumerate(train_bar):
             images, labels = data
             optimizer.zero_grad()
@@ -112,7 +113,7 @@ def main():
         net.eval()
         acc = 0.0  # accumulate accurate number / epoch
         with torch.no_grad():
-            val_bar = tqdm(validate_loader)
+            val_bar = tqdm(validate_loader, file=sys.stdout)
             for val_data in val_bar:
                 val_images, val_labels = val_data
                 outputs = net(val_images.to(device))

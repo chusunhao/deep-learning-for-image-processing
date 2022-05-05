@@ -73,6 +73,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             # 检查每张图片后缀格式是否在支持的列表中，保存支持的图像路径
             # img_formats = ['.bmp', '.jpg', '.jpeg', '.png', '.tif', '.dng']
             self.img_files = [x for x in f if os.path.splitext(x)[-1].lower() in img_formats]
+            self.img_files.sort()  # 防止不同系统排序不同，导致shape文件出现差异
         except Exception as e:
             raise FileNotFoundError("Error loading data from {}. {}".format(path, e))
 
@@ -333,7 +334,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
         if self.augment:
             # random left-right flip
-            lr_flip = True
+            lr_flip = True  # 随机水平翻转
             if lr_flip and random.random() < 0.5:
                 img = np.fliplr(img)
                 if nL:
@@ -348,7 +349,6 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
         labels_out = torch.zeros((nL, 6))  # nL: number of labels
         if nL:
-            # labels_out[:, 0] = index
             labels_out[:, 1:] = torch.from_numpy(labels)
 
         # Convert BGR to RGB, and HWC to CHW(3x512x512)
@@ -359,26 +359,11 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
     def coco_index(self, index):
         """该方法是专门为cocotools统计标签信息准备，不对图像和标签作任何处理"""
-        # load image
-        # path = self.img_files[index]
-        # img = cv2.imread(path)  # BGR
-        # import matplotlib.pyplot as plt
-        # plt.imshow(img[:, :, ::-1])
-        # plt.show()
-
-        # assert img is not None, "Image Not Found " + path
-        # o_shapes = img.shape[:2]  # orig hw
         o_shapes = self.shapes[index][::-1]  # wh to hw
 
-        # Convert BGR to RGB, and HWC to CHW(3x512x512)
-        # img = img[:, :, ::-1].transpose(2, 0, 1)
-        # img = np.ascontiguousarray(img)
-
         # load labels
-        labels = []
         x = self.labels[index]
-        if x.size > 0:
-            labels = x.copy()  # label: class, x, y, w, h
+        labels = x.copy()  # label: class, x, y, w, h
         return torch.from_numpy(labels), o_shapes
 
     @staticmethod
@@ -399,7 +384,7 @@ def load_image(self, index):
         h0, w0 = img.shape[:2]  # orig hw
         # img_size 设置的是预处理后输出的图片尺寸
         r = self.img_size / max(h0, w0)  # resize image to img_size
-        if r != 1:  # always resize down, only resize up if training with augmentation
+        if r != 1:  # if sizes are not equal
             interp = cv2.INTER_AREA if r < 1 and not self.augment else cv2.INTER_LINEAR
             img = cv2.resize(img, (int(w0 * r), int(h0 * r)), interpolation=interp)
         return img, (h0, w0), img.shape[:2]  # img, hw_original, hw_resized
@@ -458,24 +443,25 @@ def load_mosaic(self, index):
         padh = y1a - y1b
 
         # Labels 获取对应拼接图像的labels信息
+        # [class_index, x_center, y_center, w, h]
         x = self.labels[index]
         labels = x.copy()  # 深拷贝，防止修改原数据
         if x.size > 0:  # Normalized xywh to pixel xyxy format
-            # 计算标注数据在马赛克图像中的
-            labels[:, 1] = w * (x[:, 1] - x[:, 3] / 2) + padw
-            labels[:, 2] = h * (x[:, 2] - x[:, 4] / 2) + padh
-            labels[:, 3] = w * (x[:, 1] + x[:, 3] / 2) + padw
-            labels[:, 4] = h * (x[:, 2] + x[:, 4] / 2) + padh
+            # 计算标注数据在马赛克图像中的坐标(绝对坐标)
+            labels[:, 1] = w * (x[:, 1] - x[:, 3] / 2) + padw   # xmin
+            labels[:, 2] = h * (x[:, 2] - x[:, 4] / 2) + padh   # ymin
+            labels[:, 3] = w * (x[:, 1] + x[:, 3] / 2) + padw   # xmax
+            labels[:, 4] = h * (x[:, 2] + x[:, 4] / 2) + padh   # ymax
         labels4.append(labels)
 
     # Concat/clip labels
     if len(labels4):
         labels4 = np.concatenate(labels4, 0)
-        # np.clip(labels4[:, 1:] - s / 2, 0, s, out=labels4[:, 1:])  # use with center crop
+        # 设置上下限防止越界
         np.clip(labels4[:, 1:], 0, 2 * s, out=labels4[:, 1:])  # use with random_affine
 
     # Augment
-    # img4 = img4[s // 2: int(s * 1.5), s // 2:int(s * 1.5)]  # center crop (WARNING, requires box pruning)
+    # 随机旋转，缩放，平移以及错切
     img4, labels4 = random_affine(img4, labels4,
                                   degrees=self.hyp['degrees'],
                                   translate=self.hyp['translate'],
@@ -487,28 +473,31 @@ def load_mosaic(self, index):
 
 
 def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10, border=0):
+    """随机旋转，缩放，平移以及错切"""
     # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
     # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
+    # 这里可以参考我写的博文: https://blog.csdn.net/qq_37541097/article/details/119420860
     # targets = [cls, xyxy]
 
-    # 给定的输入图像的尺寸(416/512/640)，等于img4.shape / 2
+    # 最终输出的图像尺寸，等于img4.shape / 2
     height = img.shape[0] + border * 2
     width = img.shape[1] + border * 2
 
     # Rotation and Scale
-    R = np.eye(3)
-    a = random.uniform(-degrees, degrees)
-    # a += random.choice([-180, -90, 0, 90])  # add 90deg rotations to small rotations
-    s = random.uniform(1 - scale, 1 + scale)
-    # s = 2 ** random.uniform(-scale, scale)
+    # 生成旋转以及缩放矩阵
+    R = np.eye(3)  # 生成对角阵
+    a = random.uniform(-degrees, degrees)  # 随机旋转角度
+    s = random.uniform(1 - scale, 1 + scale)  # 随机缩放因子
     R[:2] = cv2.getRotationMatrix2D(angle=a, center=(img.shape[1] / 2, img.shape[0] / 2), scale=s)
 
     # Translation
+    # 生成平移矩阵
     T = np.eye(3)
     T[0, 2] = random.uniform(-translate, translate) * img.shape[0] + border  # x translation (pixels)
     T[1, 2] = random.uniform(-translate, translate) * img.shape[1] + border  # y translation (pixels)
 
     # Shear
+    # 生成错切矩阵
     S = np.eye(3)
     S[0, 1] = math.tan(random.uniform(-shear, shear) * math.pi / 180)  # x shear (deg)
     S[1, 0] = math.tan(random.uniform(-shear, shear) * math.pi / 180)  # y shear (deg)
@@ -516,6 +505,7 @@ def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10,
     # Combined rotation matrix
     M = S @ T @ R  # ORDER IS IMPORTANT HERE!!
     if (border != 0) or (M != np.eye(3)).any():  # image changed
+        # 进行仿射变化
         img = cv2.warpAffine(img, M[:2], dsize=(width, height), flags=cv2.INTER_LINEAR, borderValue=(114, 114, 114))
 
     # Transform label coordinates
@@ -528,18 +518,10 @@ def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10,
         xy = (xy @ M.T)[:, :2].reshape(n, 8)
 
         # create new boxes
+        # 对transform后的bbox进行修正(假设变换后的bbox变成了菱形，此时要修正成矩形)
         x = xy[:, [0, 2, 4, 6]]  # [n, 4]
         y = xy[:, [1, 3, 5, 7]]  # [n, 4]
         xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T  # [n, 4]
-
-        # # apply angle-based reduction of bounding boxes
-        # radians = a * math.pi / 180
-        # reduction = max(abs(math.sin(radians)), abs(math.cos(radians))) ** 0.5
-        # x = (xy[:, 2] + xy[:, 0]) / 2
-        # y = (xy[:, 3] + xy[:, 1]) / 2
-        # w = (xy[:, 2] - xy[:, 0]) * reduction
-        # h = (xy[:, 3] - xy[:, 1]) * reduction
-        # xy = np.concatenate((x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
 
         # reject warped points outside of image
         # 对坐标进行裁剪，防止越界
@@ -564,6 +546,7 @@ def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10,
 
 
 def augment_hsv(img, h_gain=0.5, s_gain=0.5, v_gain=0.5):
+    # 这里可以参考我写的博文:https://blog.csdn.net/qq_37541097/article/details/119478023
     r = np.random.uniform(-1, 1, 3) * [h_gain, s_gain, v_gain] + 1  # random gains
     hue, sat, val = cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2HSV))
     dtype = img.dtype  # uint8
@@ -575,11 +558,6 @@ def augment_hsv(img, h_gain=0.5, s_gain=0.5, v_gain=0.5):
 
     img_hsv = cv2.merge((cv2.LUT(hue, lut_hue), cv2.LUT(sat, lut_sat), cv2.LUT(val, lut_val))).astype(dtype)
     cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)  # no return needed
-
-    # Histogram equalization
-    # if random.random() < 0.2:
-    #     for i in range(3):
-    #         img[:, :, i] = cv2.equalizeHist(img[:, :, i])
 
 
 def letterbox(img: np.ndarray,
