@@ -20,7 +20,13 @@ def create_model(num_classes):
     # backbone.out_channels = 512
 
     # https://download.pytorch.org/models/mobilenet_v2-b0353104.pth
-    backbone = MobileNetV2(weights_path="./backbone/mobilenet_v2.pth").features
+    model_weight_path = "./backbone/mobilenet_v2.pth"
+    model_url = 'https://download.pytorch.org/models/mobilenet_v2-b0353104.pth'
+
+    if not os.path.exists(model_weight_path):
+        print("file {} does not exist.".format(model_weight_path))
+        os.system("wget -O {} {}".format(model_weight_path, model_url))
+    backbone = MobileNetV2(weights_path=model_weight_path).features
     backbone.out_channels = 1280  # 设置对应backbone输出特征矩阵的channels
 
     anchor_generator = AnchorsGenerator(sizes=((32, 64, 128, 256, 512),),
@@ -55,14 +61,17 @@ def main():
         "val": transforms.Compose([transforms.ToTensor()])
     }
 
-    VOC_root = "../../dataset/"  # VOCdevkit
+    VOC_root = "./"  # VOCdevkit
     aspect_ratio_group_factor = 3
     batch_size = 4
     amp = False  # 是否使用混合精度训练，需要GPU支持
 
     # check voc root
     if os.path.exists(os.path.join(VOC_root, "VOCdevkit")) is False:
-        raise FileNotFoundError("VOCdevkit dose not in path:'{}'.".format(VOC_root))
+        # raise FileNotFoundError("VOCdevkit dose not in path:'{}'.".format(VOC_root))
+        VOC2012_url = "http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar"
+        os.system("wget -O {} {}".format("VOCtrainval_11-May-2012.tar", VOC2012_url))
+        os.system("tar xvf VOCtrainval_11-May-2012.tar")
 
     # load train data set
     # VOCdevkit -> VOC2012 -> ImageSets -> Main -> train.txt
